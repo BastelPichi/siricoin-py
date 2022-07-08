@@ -1,6 +1,4 @@
-import json
-import requests
-import re
+import json, requests, re
 from web3 import Web3
 from eth_account.messages import encode_defunct
 
@@ -54,6 +52,22 @@ class siriCoin:
         """Checks if a transaction hash/ID is valid."""
         self._check()
         return bool(re.search("^[0-9a-fA-F]{64}$$", txid.replace("0x", "")))
+    
+    def set_BIO(self, privkey, bio):
+        try:
+            self._check()
+            
+            addr=self.w3.eth.account.from_key(privkey).address
+            tx = {"data": json.dumps({"from": self.w3.toChecksumAddress(addr), "to": self.w3.toChecksumAddress(addr), "tokens": 0, "parent": self.get_last_transaction(addr), "epoch": self.get_epoch(), "type": 0, "bio": str(bio)})}
+            signature = self.sign_transaction(privkey, tx)
+            r = requests.get(f"{self.node}/send/rawtransaction/?tx={json.dumps(signature).encode().hex()}")
+            if r.json()["success"] == True:
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(e)
+            return False
 
 
     def transaction(self, privkey, fromaddr, to, amount):
